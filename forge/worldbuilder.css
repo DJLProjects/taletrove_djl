@@ -3011,6 +3011,17 @@ textarea[disabled] {
   max-width: 600px;
 }
 
+#iconPickerIconsPanel {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  min-height: 0;
+}
+
+#iconPickerGrid {
+  min-height: 0;
+}
+
 /* Icon picker tab bar */
 .icon-picker-tabs {
   display: flex;
