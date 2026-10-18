@@ -111,3 +111,32 @@ test.describe('Settings hub', () => {
     await expect(modal).toBeHidden();
   });
 });
+
+test('Add Block chooser stays within a short viewport', async ({ page }) => {
+  await page.setViewportSize({ width: 420, height: 320 });
+  await gotoApp(page);
+
+  const bounds = await page.evaluate(async () => {
+    const anchor = document.createElement('button');
+    anchor.style.cssText = 'position:fixed; right:8px; bottom:8px; width:32px; height:32px;';
+    document.body.appendChild(anchor);
+    await showBlockChooserModal(anchor, 'test-owner', 'feature');
+    const menu = document.getElementById('blockChooserModal');
+    const rect = menu.getBoundingClientRect();
+    return {
+      left: rect.left,
+      top: rect.top,
+      right: rect.right,
+      bottom: rect.bottom,
+      viewportWidth: document.documentElement.clientWidth,
+      viewportHeight: document.documentElement.clientHeight,
+      scrollable: menu.scrollHeight > menu.clientHeight,
+    };
+  });
+
+  expect(bounds.left).toBeGreaterThanOrEqual(0);
+  expect(bounds.top).toBeGreaterThanOrEqual(0);
+  expect(bounds.right).toBeLessThanOrEqual(bounds.viewportWidth);
+  expect(bounds.bottom).toBeLessThanOrEqual(bounds.viewportHeight);
+  expect(bounds.scrollable).toBe(true);
+});

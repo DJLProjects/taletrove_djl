@@ -2491,8 +2491,7 @@ async function showInfoPanel(id, type = 'feature') {
     if (myReqId !== _infoPanelReqId) return;
     const stickyAddBtn = el('button', { class: 'add-block-btn', title: 'Add Block', 'aria-label': 'Add Block', innerHTML: addBtnIconHtml });
     stickyAddBtn.onclick = () => {
-      const rect = stickyAddBtn.getBoundingClientRect();
-      showBlockChooserModal(rect.left, rect.bottom + 8, id, type);
+      showBlockChooserModal(stickyAddBtn, id, type);
     };
     canvasWrapper.appendChild(stickyAddBtn);
   }

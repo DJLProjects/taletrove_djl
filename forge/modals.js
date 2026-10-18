@@ -1782,9 +1782,12 @@ function showIconContextMenu(e, iconKey) {
   setTimeout(() => { document.body.addEventListener('click', closeMenu, { once: true, capture: true }); }, 0);
 }
 
-async function showBlockChooserModal(x, y, ownerId, ownerType = 'feature') {
+async function showBlockChooserModal(anchor, ownerId, ownerType = 'feature') {
   const existingModal = document.getElementById('blockChooserModal');
-  if (existingModal) existingModal.remove();
+  if (existingModal) {
+    if (existingModal.closeChooser) existingModal.closeChooser();
+    else existingModal.remove();
+  }
 
   const listItems = [];
   const blockEntries = Object.entries(BLOCK_DEFINITIONS)
@@ -1823,9 +1826,10 @@ async function showBlockChooserModal(x, y, ownerId, ownerType = 'feature') {
   ]);
 
   const closeModal = () => {
-    const modalToRemove = document.getElementById('blockChooserModal');
-    if (modalToRemove) modalToRemove.remove();
+    modal.remove();
     document.body.removeEventListener('click', closeModal, { capture: true });
+    window.removeEventListener('resize', positionModal);
+    window.removeEventListener('scroll', positionModal, true);
   };
 
   rearrangeItem.addEventListener('click', (e) => {
@@ -1839,22 +1843,61 @@ async function showBlockChooserModal(x, y, ownerId, ownerType = 'feature') {
   }
 
   const modalWidth = 240;
-  let finalX = x;
-
-  if (x + modalWidth > window.innerWidth) {
-    finalX = x - modalWidth;
-  }
+  const viewportMargin = 8;
+  const anchorGap = 8;
 
   const modal = el('div', {
     id: 'blockChooserModal',
     class: 'modal-content',
-    // Use the new finalX variable for the left position
-    style: `position: fixed; top: ${y}px; left: ${finalX}px; z-index: 2000; width: ${modalWidth}px; max-width: ${modalWidth}px; padding: 0.5rem; text-align: left;`
+    style: `position: fixed; z-index: 2000; width: ${modalWidth}px; max-width: ${modalWidth}px; box-sizing: border-box; max-height: calc(100vh - ${viewportMargin * 2}px); overflow-y: auto; padding: 0.5rem; text-align: left;`
   }, [
     el('ul', { class: 'is-dropdown-menu', style: 'margin:0; padding:0; list-style:none;' }, listItems)
   ]);
+  modal.closeChooser = closeModal;
+
+  const positionModal = () => {
+    if (!anchor.isConnected) {
+      closeModal();
+      return;
+    }
+
+    const viewportWidth = document.documentElement.clientWidth || window.innerWidth;
+    const viewportHeight = document.documentElement.clientHeight || window.innerHeight;
+    const anchorRect = anchor.getBoundingClientRect();
+    const width = Math.max(0, Math.min(modalWidth, viewportWidth - viewportMargin * 2));
+    modal.style.width = `${width}px`;
+    modal.style.maxWidth = `${width}px`;
+    modal.style.maxHeight = `${Math.max(0, viewportHeight - viewportMargin * 2)}px`;
+
+    const belowSpace = Math.max(0, viewportHeight - viewportMargin - anchorRect.bottom - anchorGap);
+    const aboveSpace = Math.max(0, anchorRect.top - viewportMargin - anchorGap);
+    let top;
+    const naturalHeight = modal.getBoundingClientRect().height;
+    if (naturalHeight <= belowSpace) {
+      top = anchorRect.bottom + anchorGap;
+    } else if (naturalHeight <= aboveSpace) {
+      top = anchorRect.top - anchorGap - naturalHeight;
+    } else if (belowSpace >= aboveSpace) {
+      modal.style.maxHeight = `${belowSpace}px`;
+      top = anchorRect.bottom + anchorGap;
+    } else {
+      modal.style.maxHeight = `${aboveSpace}px`;
+      top = anchorRect.top - anchorGap - modal.getBoundingClientRect().height;
+    }
+
+    const height = modal.getBoundingClientRect().height;
+    const left = Math.max(viewportMargin, Math.min(
+      anchorRect.left + width > viewportWidth - viewportMargin ? anchorRect.right - width : anchorRect.left,
+      viewportWidth - viewportMargin - width
+    ));
+    modal.style.left = `${left}px`;
+    modal.style.top = `${Math.max(viewportMargin, Math.min(top, viewportHeight - viewportMargin - height))}px`;
+  };
 
   document.body.appendChild(modal);
+  positionModal();
+  window.addEventListener('resize', positionModal);
+  window.addEventListener('scroll', positionModal, true);
   setTimeout(() => {
     document.body.addEventListener('click', closeModal, { once: true, capture: true });
   }, 0);
