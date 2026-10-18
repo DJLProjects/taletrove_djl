@@ -56,7 +56,7 @@ test.describe('C4 — block editor per-type controls', () => {
         const editWrapper = async (blockId) => {
           selectedBlockId = blockId;
           const blk = feat.blocks.find(b => b.blockId === blockId);
-          return renderBlock(blk);
+          return renderBlock(blk, feat.id, 'feature');
         };
         const has = (w, sel) => !!w.querySelector(sel);
         const btnText = (w, t) => [...w.querySelectorAll('button')].some(b => b.textContent.includes(t));
@@ -97,7 +97,7 @@ test.describe('C4 — block editor per-type controls', () => {
 
         // View mode: unselected TextField renders markdown, no edit inputs
         selectedBlockId = null;
-        const vw = await renderBlock(feat.blocks[0]);
+        const vw = await renderBlock(feat.blocks[0], feat.id, 'feature');
         out.viewMode = {
           typed: vw.classList.contains('type-textfield'),
           noEditor: !vw.querySelector('textarea.inline-editor'),
@@ -122,4 +122,56 @@ test.describe('C4 — block editor per-type controls', () => {
     const critical = errors.filter(m => !m.includes('Babylon.js') && !m.includes('[SW]') && !m.includes('AppShell'));
     expect(critical, `JS errors:\n${critical.join('\n')}`).toHaveLength(0);
   });
+});
+
+test('map content blocks can be added, edited, and removed', async ({ page }) => {
+  await gotoApp(page);
+
+  const mapId = await page.evaluate(async () => {
+    const map = state.maps.find(m => m.id === state.activeMapId) || state.maps[0];
+    if (!map) throw new Error('Expected a map in the sample world');
+
+    window.__mapBlockTestSnapshot = {
+      blocks: map.blocks,
+      isContentEditMode,
+      selectedBlockId,
+    };
+    map.blocks = [];
+    isContentEditMode = true;
+    selectedBlockId = null;
+    await showInfoPanel(map.id, 'map');
+    return map.id;
+  });
+
+  try {
+    await page.evaluate((id) => addBlock(id, 'map', 'TextField'), mapId);
+    await expect(page.locator('#blocksContainer .canvas-block')).toHaveCount(1);
+    await page.evaluate(async (id) => {
+      selectedBlockId = null;
+      await showInfoPanel(id, 'map');
+    }, mapId);
+    await page.locator('#blocksContainer .canvas-block').first().click();
+
+    const contentInput = page.locator('#blocksContainer textarea.inline-editor').first();
+    await expect(contentInput).toBeVisible();
+    await contentInput.fill('Map content edited');
+
+    const editedContent = await page.evaluate((id) => state.maps.find(m => m.id === id).blocks[0].data.content, mapId);
+    expect(editedContent).toBe('Map content edited');
+
+    await page.locator('#blocksContainer .delete-block-btn').first().evaluate(button => button.click());
+    await expect.poll(() => page.evaluate((id) => state.maps.find(m => m.id === id).blocks.length, mapId)).toBe(0);
+  } finally {
+    await page.evaluate(async (id) => {
+      const map = state.maps.find(m => m.id === id);
+      const snapshot = window.__mapBlockTestSnapshot;
+      if (map && snapshot) map.blocks = snapshot.blocks;
+      if (snapshot) {
+        isContentEditMode = snapshot.isContentEditMode;
+        selectedBlockId = snapshot.selectedBlockId;
+      }
+      delete window.__mapBlockTestSnapshot;
+      await showInfoPanel(id, 'map');
+    }, mapId);
+  }
 });

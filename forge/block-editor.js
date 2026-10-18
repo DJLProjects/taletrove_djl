@@ -1056,15 +1056,13 @@ function _buildMapEmbedBlockEditor(block, wrapper, ctx) {
   );
 }
 
-async function renderBlock(block) {
+async function renderBlock(block, ownerId, ownerType) {
   const isSelected = (block.blockId === selectedBlockId);
-  // Determine the owner item (feature or encyclopedia)
-  const ownerItem = (infoPanelFeatureId)
-    ? state.features.find(f => f.id === infoPanelFeatureId)
-    : state.encyclopedia.find(e => e.id === selectedEncyclopediaEntryId);
-
-  const ownerId = ownerItem?.id;
-  const ownerType = infoPanelFeatureId ? 'feature' : 'encyclopedia';
+  const ownerItem = ownerType === 'map'
+    ? state.maps.find(m => m.id === ownerId)
+    : ownerType === 'encyclopedia'
+      ? state.encyclopedia.find(e => e.id === ownerId)
+      : state.features.find(f => f.id === ownerId);
   const ctx = { ownerId, ownerType, ownerItem };
 
   // Float: only applies to Image blocks in view mode

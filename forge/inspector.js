@@ -2046,15 +2046,19 @@ async function buildLinksSection(entity, entityType, parentElement) {
 }
 
 
-async function renderCanvasBlocks(wrapper, blocksToRender) {
+async function renderCanvasBlocks(wrapper, blocksToRender, ownerId, ownerType) {
   if (blocksToRender.length > 0) {
     for (const block of blocksToRender) {
-      const blockElement = await renderBlock(block);
+      const blockElement = await renderBlock(block, ownerId, ownerType);
       wrapper.appendChild(blockElement);
     }
   } else {
-    const feature = state.features.find(f => f.id === infoPanelFeatureId);
-    const hasBlocks = feature && feature.blocks && feature.blocks.length > 0;
+    const ownerItem = ownerType === 'map'
+      ? state.maps.find(m => m.id === ownerId)
+      : ownerType === 'encyclopedia'
+        ? state.encyclopedia.find(e => e.id === ownerId)
+        : state.features.find(f => f.id === ownerId);
+    const hasBlocks = ownerItem?.blocks?.length > 0;
     if (!hasBlocks) {
       wrapper.appendChild(el('div', { class: 'inspector-empty-state' }, [
         el('div', { class: 'inspector-empty-icon inspector-empty-icon--note' }),
@@ -2393,7 +2397,7 @@ async function showInfoPanel(id, type = 'feature') {
   if (blocks.length > 0) {
     blocksContainer.innerHTML = ''; // clear skeletons
     for (const block of blocks) {
-      const blockElement = await renderBlock(block);
+      const blockElement = await renderBlock(block, id, type);
       blocksContainer.appendChild(blockElement);
     }
   } else {
@@ -2676,7 +2680,7 @@ async function showPinnedPeekPanel(id, type = 'feature') {
   if (blocks.length > 0) {
     for (const block of blocks) {
       if (myReqId !== _pinnedPanelReqId) return;
-      const blockEl = await renderBlock(block);
+      const blockEl = await renderBlock(block, id, type);
       blocksContainer.appendChild(blockEl);
     }
   } else {
