@@ -38,22 +38,16 @@ window.rollDice = async (notation) => {
     const diceBoxEl = document.getElementById('dice-box');
     if (!diceBoxEl) return;
     
-    diceBoxEl.style.pointerEvents = 'auto';
     diceBoxEl.classList.add('is-visible');
-    if (diceBox.resizeWorld) diceBox.resizeWorld();
+    diceBoxEl.style.pointerEvents = 'none';
     
     try {
-        if (diceBox.clear) diceBox.clear();
-        
         const currentTheme = settings.diceTheme || "default";
-        await diceBox.loadTheme(currentTheme);
-        await diceBox.updateConfig({
+        console.log("TaleTrove DiceBox: Rolling...", notation);
+        const results = await diceBox.roll(notation, {
             theme: currentTheme,
             themeColor: settings.diceColor || "#ff7a1a"
         });
-
-        console.log("TaleTrove DiceBox: Rolling...", notation);
-        const results = await diceBox.roll(notation);
         
         if (results && results.length > 0) {
             const total = results.reduce((acc, die) => acc + die.value, 0);
@@ -63,7 +57,6 @@ window.rollDice = async (notation) => {
         }
         setTimeout(() => {
             diceBoxEl.classList.remove('is-visible');
-            diceBoxEl.style.pointerEvents = 'none';
         }, 5000);
     } catch (e) {
         console.error("TaleTrove DiceBox: Roll failed", e);
