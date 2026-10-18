@@ -9,6 +9,40 @@
 import { test, expect } from '@playwright/test';
 import { gotoApp } from './helpers.js';
 
+test('main map exposes editable properties in both Atlas renderers', async ({ page }) => {
+  await gotoApp(page);
+
+  const rowStates = [];
+  for (const virtual of [false, true]) {
+    rowStates.push(await page.evaluate(async (useVirtual) => {
+      saveLS('atlasVirtualTree', useVirtual);
+      await refreshAtlasTree();
+      const rootMap = state.maps.find(map => map.parentId === null);
+      const row = [...document.querySelectorAll('.map-row')].find(mapRow =>
+        mapRow.dataset.mapId === rootMap.id || mapRow.closest('.map-node')?.dataset.mapId === rootMap.id
+      );
+      return {
+        hasPropertiesButton: !!row?.querySelector('.row-more-btn'),
+        hasVisibilityButton: !!row?.querySelector('.row-vis-btn'),
+      };
+    }, virtual));
+  }
+
+  expect(rowStates).toEqual([
+    { hasPropertiesButton: true, hasVisibilityButton: false },
+    { hasPropertiesButton: true, hasVisibilityButton: false },
+  ]);
+
+  await page.evaluate(async () => {
+    saveLS('atlasVirtualTree', true);
+    await refreshAtlasTree();
+    const rootMap = state.maps.find(map => map.parentId === null);
+    const row = [...document.querySelectorAll('.map-row')].find(mapRow => mapRow.dataset.mapId === rootMap.id);
+    row.querySelector('.row-more-btn').click();
+  });
+  await expect(page.locator('#infoPanel .scale-input-group input[type="number"]').first()).toBeVisible();
+});
+
 test.describe('Phase M — atlas flat row model', () => {
   test('flat rows mirror legacy DOM order, depths, collapse, and ghosts', async ({ page }) => {
     const errors = [];

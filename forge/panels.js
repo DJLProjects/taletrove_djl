@@ -554,17 +554,22 @@ async function _buildAtlasFlatRowEl(rowDesc) {
     const mapDetails = [mapIconWrap, el('span', { class: 'tree-label', text: mapData.name })];
     if (mapData.parentId === null) mapDetails.push(el('span', { class: 'chip main', text: 'Main' }));
     mapDetails.push(el('div', { style: 'flex-grow: 1;' }));
-    if (role === 'gm' && mapData.parentId !== null) {
+    if (role === 'gm') {
       const mapRowActions = el('div', { class: 'row-actions' });
-      const mapVisBtn = el('button', { class: `row-vis-btn ${mapData.visibleToPlayers ? 'is-player' : 'is-gm'}`, title: mapData.visibleToPlayers ? 'Visible to Players — click for GM-only' : 'GM Only — click to show players', 'aria-label': mapData.visibleToPlayers ? 'Visible to players — click for GM-only' : 'GM only — click to show players', 'aria-pressed': mapData.visibleToPlayers ? 'true' : 'false' });
-      mapVisBtn.innerHTML = getIconHTMLSync(mapData.visibleToPlayers ? 'eye' : 'eye-closed', 'currentColor');
-      mapVisBtn.addEventListener('click', (e) => { e.stopPropagation(); toggleMapVisibility(mapData.id); });
+      if (mapData.parentId !== null) {
+        const mapVisBtn = el('button', { class: `row-vis-btn ${mapData.visibleToPlayers ? 'is-player' : 'is-gm'}`, title: mapData.visibleToPlayers ? 'Visible to Players — click for GM-only' : 'GM Only — click to show players', 'aria-label': mapData.visibleToPlayers ? 'Visible to players — click for GM-only' : 'GM only — click to show players', 'aria-pressed': mapData.visibleToPlayers ? 'true' : 'false' });
+        mapVisBtn.innerHTML = getIconHTMLSync(mapData.visibleToPlayers ? 'eye' : 'eye-closed', 'currentColor');
+        mapVisBtn.addEventListener('click', (e) => { e.stopPropagation(); toggleMapVisibility(mapData.id); });
+        mapRowActions.appendChild(mapVisBtn);
+      }
       const mapMoreBtn = el('button', { class: 'row-more-btn', title: 'Edit properties', 'aria-label': `Edit properties for ${escapeHtml(mapData.name || 'this map')}` });
       mapMoreBtn.innerHTML = getIconHTMLSync('dots-three-outline', 'currentColor');
       mapMoreBtn.addEventListener('click', (e) => { e.stopPropagation(); window.openPropertiesSheet?.(mapData.id, 'map'); });
-      mapRowActions.append(mapVisBtn, mapMoreBtn);
+      mapRowActions.appendChild(mapMoreBtn);
       mapDetails.push(mapRowActions);
-      rowEl.addEventListener('contextmenu', (e) => showAtlasContextMenu(e, 'map', mapData.id, mapData.name));
+      if (mapData.parentId !== null) {
+        rowEl.addEventListener('contextmenu', (e) => showAtlasContextMenu(e, 'map', mapData.id, mapData.name));
+      }
     }
     rowEl.append(...mapDetails);
 
@@ -1159,18 +1164,21 @@ async function _renderAtlasMapNode(ctx, mapData, parentElement) {
   if (mapData.parentId === null) mapDetails.push(el('span', { class: 'chip main', text: 'Main' }));
   mapDetails.push(el('div', { style: 'flex-grow: 1;' }));
 
-  if (role === 'gm' && mapData.parentId !== null) {
+  if (role === 'gm') {
     const mapRowActions = el('div', { class: 'row-actions' });
 
-    const mapVisBtn = el('button', { class: `row-vis-btn ${mapData.visibleToPlayers ? 'is-player' : 'is-gm'}`, title: mapData.visibleToPlayers ? 'Visible to Players — click for GM-only' : 'GM Only — click to show players', 'aria-label': mapData.visibleToPlayers ? 'Visible to players — click for GM-only' : 'GM only — click to show players', 'aria-pressed': mapData.visibleToPlayers ? 'true' : 'false' });
-    mapVisBtn.innerHTML = getIconHTMLSync(mapData.visibleToPlayers ? 'eye' : 'eye-closed', 'currentColor');
-    mapVisBtn.addEventListener('click', (e) => { e.stopPropagation(); toggleMapVisibility(mapData.id); });
+    if (mapData.parentId !== null) {
+      const mapVisBtn = el('button', { class: `row-vis-btn ${mapData.visibleToPlayers ? 'is-player' : 'is-gm'}`, title: mapData.visibleToPlayers ? 'Visible to Players — click for GM-only' : 'GM Only — click to show players', 'aria-label': mapData.visibleToPlayers ? 'Visible to players — click for GM-only' : 'GM only — click to show players', 'aria-pressed': mapData.visibleToPlayers ? 'true' : 'false' });
+      mapVisBtn.innerHTML = getIconHTMLSync(mapData.visibleToPlayers ? 'eye' : 'eye-closed', 'currentColor');
+      mapVisBtn.addEventListener('click', (e) => { e.stopPropagation(); toggleMapVisibility(mapData.id); });
+      mapRowActions.appendChild(mapVisBtn);
+    }
 
     const mapMoreBtn = el('button', { class: 'row-more-btn', title: 'Edit properties', 'aria-label': `Edit properties for ${escapeHtml(mapData.name || 'this map')}` });
     mapMoreBtn.innerHTML = getIconHTMLSync('dots-three-outline', 'currentColor');
     mapMoreBtn.addEventListener('click', (e) => { e.stopPropagation(); window.openPropertiesSheet?.(mapData.id, 'map'); });
 
-    mapRowActions.append(mapVisBtn, mapMoreBtn);
+    mapRowActions.appendChild(mapMoreBtn);
     mapDetails.push(mapRowActions);
   }
   mapRow.append(...mapDetails);
